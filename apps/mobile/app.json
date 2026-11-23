@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "TradeLink",
+    "slug": "tradelink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "tradelink",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B236E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tradelink.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B236E"
+      },
+      "package": "com.tradelink.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TradeLink needs access to your camera/photos to upload listing images."
+        }
+      ]
+    ]
+  }
+}

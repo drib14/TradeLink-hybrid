@@ -1,0 +1,358 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  GUEST
+  STUDENT
+  MODERATOR
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  EMAIL_VERIFIED
+  CAMPUS_VERIFIED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  RESERVED
+  SOLD
+  ARCHIVED
+  REMOVED
+}
+
+enum ListingCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  LISTING
+  USER
+  CONVERSATION
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  LISTING_UPDATE
+  REPORT_UPDATE
+  ACCOUNT_UPDATE
+  MODERATION_ACTION
+}
+
+enum AuditAction {
+  USER_SUSPENDED
+  USER_REACTIVATED
+  USER_ROLE_CHANGED
+  USER_VERIFIED
+  LISTING_REMOVED
+  LISTING_RESTORED
+  REPORT_RESOLVED
+  REPORT_DISMISSED
+  CATEGORY_CREATED
+  CATEGORY_UPDATED
+  CONFIG_UPDATED
+}
+
+model Campus {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  branch    String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  users    User[]
+  listings Listing[]
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  passwordHash       String
+  displayName        String
+  profilePhoto       String?
+  campusId           String
+  campus             Campus             @relation(fields: [campusId], references: [id])
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  role               UserRole           @default(STUDENT)
+  accountStatus      AccountStatus      @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  listings            Listing[]
+  favorites           Favorite[]
+  buyerConversations  Conversation[]  @relation("buyer")
+  sellerConversations Conversation[]  @relation("seller")
+  sentMessages        Message[]       @relation("sender")
+  reportsSubmitted    Report[]        @relation("reporter")
+  reportsAssigned     Report[]        @relation("assignee")
+  blocksInitiated     Block[]         @relation("blocker")
+  blocksReceived      Block[]         @relation("blocked")
+  reviewsGiven        Review[]        @relation("reviewer")
+  reviewsReceived     Review[]        @relation("reviewee")
+  notifications       Notification[]
+  auditLogsPerformed  AuditLog[]      @relation("actor")
+  refreshTokens       RefreshToken[]
+  pushTokens          PushToken[]
+
+  @@index([email])
+  @@index([campusId])
+  @@index([role])
+  @@index([accountStatus])
+}
+
+model Listing {
+  id               String           @id @default(uuid())
+  sellerId         String
+  seller           User             @relation(fields: [sellerId], references: [id])
+  categoryId       String
+  category         Category         @relation(fields: [categoryId], references: [id])
+  campusId         String
+  campus           Campus           @relation(fields: [campusId], references: [id])
+  title            String
+  description      String
+  price            Decimal          @db.Decimal(10, 2)
+  condition        ListingCondition
+  status           ListingStatus    @default(DRAFT)
+  pickupPreference String?
+  viewCount        Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  images        ListingImage[]
+  favorites     Favorite[]
+  conversations Conversation[]
+  reviews       Review[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([campusId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ListingImage {
+  id           String   @id @default(uuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  storageKey   String
+  displayOrder Int      @default(0)
+  width        Int?
+  height       Int?
+  sizeBytes    Int?
+  createdAt    DateTime @default(now())
+
+  @@unique([listingId, displayOrder])
+  @@index([listingId])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  icon      String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  listings Listing[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  listingId     String
+  listing       Listing   @relation(fields: [listingId], references: [id])
+  buyerId       String
+  buyer         User      @relation("buyer", fields: [buyerId], references: [id])
+  sellerId      String
+  seller        User      @relation("seller", fields: [sellerId], references: [id])
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  messages Message[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("sender", fields: [senderId], references: [id])
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Report {
+  id           String           @id @default(uuid())
+  reporterId   String
+  reporter     User             @relation("reporter", fields: [reporterId], references: [id])
+  targetType   ReportTargetType
+  targetId     String
+  reason       String
+  details      String?
+  status       ReportStatus     @default(PENDING)
+  assignedToId String?
+  assignedTo   User?            @relation("assignee", fields: [assignedToId], references: [id])
+  resolution   String?
+  resolvedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([status])
+  @@index([reporterId])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  reviewerId  String
+  reviewer    User     @relation("reviewer", fields: [reviewerId], references: [id])
+  revieweeId  String
+  reviewee    User     @relation("reviewee", fields: [revieweeId], references: [id])
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id])
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([reviewerId, listingId])
+  @@index([revieweeId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  actorId    String
+  actor      User        @relation("actor", fields: [actorId], references: [id])
+  action     AuditAction
+  targetType String
+  targetId   String
+  reason     String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  deviceInfo String?
+  ipAddress  String?
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradelink_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tradelink
+      POSTGRES_USER: tradelink
+      POSTGRES_PASSWORD: tradelink_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradelink -d tradelink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: tradelink_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: tradelink
+      MINIO_ROOT_PASSWORD: tradelink_dev
+    ports:
+      - '9000:9000'   # S3 API
+      - '9001:9001'   # MinIO Web Console
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: tradelink_minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set localminio http://minio:9000 tradelink tradelink_dev;
+      mc mb localminio/tradelink-uploads --ignore-existing;
+      mc anonymous set download localminio/tradelink-uploads;
+      exit 0;
+      "
+
+volumes:
+  postgres_data:
+  minio_data:

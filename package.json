@@ -1,0 +1,20 @@
+{
+  "name": "tradelink-hybrid",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TradeLink - Hybrid Campus Marketplace for the University of Cebu",
+  "scripts": {
+    "dev:api": "pnpm --filter @tradelink/api dev",
+    "dev:mobile": "pnpm --filter @tradelink/mobile start",
+    "dev:web": "pnpm --filter @tradelink/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:migrate": "pnpm --filter @tradelink/api prisma:migrate",
+    "db:seed": "pnpm --filter @tradelink/api prisma:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2"
+  }
+}
