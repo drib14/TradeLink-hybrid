@@ -7,6 +7,11 @@
     "icon": "./assets/icon.png",
     "scheme": "tradelink",
     "userInterfaceStyle": "light",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
