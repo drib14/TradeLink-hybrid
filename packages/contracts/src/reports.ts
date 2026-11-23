@@ -1,4 +1,4 @@
-import { ReportTargetType } from './enums.js';
+import { ReportTargetType } from './enums';
 
 export interface CreateReportRequest {
   targetType: ReportTargetType;

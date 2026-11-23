@@ -7,11 +7,15 @@
     "dev": "nest start --watch",
     "start": "node dist/main",
     "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node --loader ts-node/esm prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@tradelink/contracts": "workspace:*",
@@ -28,6 +32,7 @@
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "dotenv": "^16.4.7",
     "helmet": "^8.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

@@ -1,5 +1,12 @@
+import * as path from 'path';
+import * as dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
+
+// Ensure environment variables are loaded from root .env or local environment
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
 
 const prisma = new PrismaClient();
 

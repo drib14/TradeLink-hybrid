@@ -17,6 +17,7 @@ TradeLink is a hybrid mobile and web marketplace built exclusively for the **Uni
 - [Campuses Covered](#-campuses-covered)
 - [Key Features](#-key-features)
 - [Tech Stack](#-tech-stack)
+- [Supabase Integration](#-supabase-integration)
 - [Project Structure](#-project-structure)
 - [MVP Roadmap](#-mvp-roadmap)
 - [Brand Identity](#-brand-identity)
@@ -63,6 +64,30 @@ TradeLink is pre-configured and seeded for all official University of Cebu campu
 
 ---
 
+## ⚡ Supabase Integration
+
+TradeLink uses **Supabase** for its managed PostgreSQL database and connection pooling:
+
+### 1. Dual-URL Prisma Architecture
+* **`DATABASE_URL` (Port 6543 / Transaction Pooler)**: Used by the runtime NestJS API. Connection pooling handles high concurrency efficiently.
+* **`DIRECT_URL` (Port 5432 / Direct Connection)**: Used exclusively by Prisma CLI for migrations (`pnpm db:migrate`) and schema pushes (`pnpm db:push`) without pooler restrictions.
+
+### 2. Quick Setup from Supabase Dashboard
+1. Open your project on [database.new](https://database.new) or [supabase.com](https://supabase.com).
+2. Go to **Project Settings** $\to$ **Database** $\to$ **Connection string** $\to$ select **URI**:
+   * Copy the **Transaction Mode** string (port `6543`) into `DATABASE_URL` in `.env`
+   * Copy the **Session / Direct Mode** string (port `5432`) into `DIRECT_URL` in `.env`
+3. Push the schema:
+   ```bash
+   pnpm db:push
+   ```
+4. Seed UC campuses & secure admin account:
+   ```bash
+   pnpm db:seed
+   ```
+
+---
+
 ## ✨ Key Features
 
 ### 🔐 Authentication & Campus Verification
@@ -105,15 +130,6 @@ TradeLink is pre-configured and seeded for all official University of Cebu campu
 - Admin can hide/remove listings, issue warnings, suspend/reactivate accounts
 - Prohibited listings and conduct defined by campus policy
 
-### 👨‍💼 Admin Console (Web)
-- **Dashboard**: verified users, active listings, pending reports, registration trends
-- **User management**: search, inspect, suspend/reactivate accounts, moderation history
-- **Listing management**: search, filter, inspect, hide/remove content
-- **Reports queue**: priority, status, assignment, resolution notes, audit trail
-- **Category management**: create, rename, reorder, enable/disable
-- **Configuration**: campus settings, listing limits, image limits, notification settings
-- **Audit log**: actor, action, target, timestamp, and reason for every sensitive admin action
-
 ---
 
 ## 🛠️ Tech Stack
@@ -125,12 +141,12 @@ TradeLink is pre-configured and seeded for all official University of Cebu campu
 | **Web App** | Next.js + TypeScript | Responsive marketplace + admin console |
 | **Web Styling** | Tailwind CSS | Utility-first CSS framework |
 | **Backend API** | NestJS + TypeScript | Modular, validated, guard-protected API |
-| **Database** | PostgreSQL | Relational data with transactional integrity |
+| **Database** | Supabase (PostgreSQL 16) | Managed cloud relational database with pooling |
 | **ORM** | Prisma | Type-safe database access + migrations |
 | **Auth** | JWT (access + refresh tokens) | Secure, stateless authentication |
 | **Password Hashing** | Argon2id | Industry-standard password security |
 | **Realtime** | Socket.IO (WebSocket) | Live messaging and notification events |
-| **Object Storage** | S3-compatible (MinIO / AWS S3) | Listing and profile image storage |
+| **Object Storage** | S3-compatible (Supabase Storage / MinIO / AWS S3) | Listing and profile image storage |
 | **Push Notifications** | Expo Notifications | Mobile push delivery |
 | **CI/CD** | GitHub Actions | Automated lint, test, build, deploy |
 | **Monitoring** | Error tracking + structured logs | Production health visibility |
@@ -153,7 +169,7 @@ tradelink-hybrid/
 │   │   └── public/          # TradeLink logo & brand assets
 │   └── api/                 # NestJS modular monolith backend
 │       ├── prisma/
-│       │   ├── schema.prisma# Relational schema (13 models)
+│       │   ├── schema.prisma# Relational schema (Supabase directUrl configured)
 │       │   └── seed.ts      # Seeds 5 UC campuses, categories & secure admin
 │       └── src/
 │           ├── common/      # Guards, exception filters, DTO validation
@@ -166,23 +182,11 @@ tradelink-hybrid/
 │   ├── SYSTEM_DESIGN.md
 │   ├── SECURITY_AND_AUTH_PLAN.md
 │   └── MOBILE_APP_PLAN.md
-├── docker-compose.yml       # Local PostgreSQL + MinIO S3 services
-├── .env.example             # Safe environment template
+├── docker-compose.yml       # Local PostgreSQL + MinIO fallback services
+├── .env.example             # Safe environment template with Supabase config
 ├── .gitignore               # Strict secret & build exclusion rules
 └── README.md
 ```
-
----
-
-## 🗺️ MVP Roadmap
-
-| Phase | Scope | Exit Criteria |
-|-------|-------|---------------|
-| **Phase 0 — Discovery** | Stakeholder interviews, campus policy check, user journeys, clickable prototype, technical decisions | Scope approved; risks documented; prototype reviewed |
-| **Phase 1 — MVP Foundation** | Auth, verification, profiles, categories, listing CRUD, image upload, browse/search, favorites | Students can register, verify, publish, find, and save listings |
-| **Phase 2 — Communication** | Conversations, messaging, notifications, block/report, listing reservation/sold states | Buyer and seller can coordinate an exchange; abuse can be reported |
-| **Phase 3 — Admin & Hardening** | Admin console, moderation queue, audit logs, security review, automated tests, monitoring, backups | Admins can safely operate the pilot; release checklist passes |
-| **Phase 4 — Pilot & Iteration** | Limited campus rollout, feedback, analytics, bug fixes, performance improvements | Pilot KPIs reviewed; prioritized improvements agreed |
 
 ---
 
@@ -209,42 +213,34 @@ tradelink-hybrid/
 ## 🔐 Security & Environment
 
 > [!IMPORTANT]
-> **Zero Credential Exposure Guarantee**: Sensitive administrator credentials, database passwords, and JWT secret keys are never committed into git or exposed to GitHub. All secrets are configured strictly through your local `.env` file (which is git-ignored).
+> **Zero Credential Exposure Guarantee**: Sensitive administrator credentials, Supabase database passwords, and JWT secret keys are never committed into git or exposed to GitHub. All secrets are configured strictly through your local `.env` file (which is git-ignored).
 
 To configure local credentials:
 1. Copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
-2. Define `ADMIN_DEFAULT_EMAIL` and `ADMIN_DEFAULT_PASSWORD` in `.env`.
-3. The database seeder (`pnpm --filter @tradelink/api prisma:seed`) automatically provisions the admin account from these variables without exposing them in git history.
+2. Paste your Supabase `DATABASE_URL` and `DIRECT_URL`.
+3. The database seeder (`pnpm db:seed`) automatically provisions the admin account from `.env` without exposing passwords in git history.
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- **Node.js** 20+ (LTS recommended)
-- **PostgreSQL** 15+ (or run `docker compose up -d`)
-- **pnpm** 9+
-- **Expo CLI** (for mobile development)
-
-### Quickstart
+### Quickstart with Supabase
 
 ```bash
 # 1. Install dependencies
 pnpm install
 
-# 2. Start local database & storage (optional if using Docker)
-docker compose up -d
-
-# 3. Setup environment variables
+# 2. Setup your Supabase URLs in .env
 cp .env.example .env
 
-# 4. Run database migrations and seed (seeds all 5 UC campuses)
-pnpm --filter @tradelink/api prisma:migrate
-pnpm --filter @tradelink/api prisma:seed
+# 3. Push schema to Supabase PostgreSQL
+pnpm db:push
+
+# 4. Seed all 5 UC campuses and admin into Supabase
+pnpm db:seed
 
 # 5. Start development servers
 pnpm dev:api       # Backend API (:4000)
@@ -258,20 +254,9 @@ pnpm dev:web       # Next.js web application (:3000)
 
 | Document | Description |
 |----------|-------------|
-| [System Design](docs/SYSTEM_DESIGN.md) | Architecture, database schema, API specification, module structure, data flows |
+| [System Design](docs/SYSTEM_DESIGN.md) | Architecture, Supabase schema, API specification, module structure, data flows |
 | [Security & Auth Plan](docs/SECURITY_AND_AUTH_PLAN.md) | Authentication, authorization, attack prevention, data protection, security checklist |
 | [Mobile App Plan](docs/MOBILE_APP_PLAN.md) | Mobile first roadmap, screen map, component library, API integration, sprint plan |
-
----
-
-## 🚫 Out of Scope (MVP)
-
-- ❌ In-app wallet, escrow, card payments, or holding user funds
-- ❌ Delivery fleet, shipping labels, or logistics tracking
-- ❌ Public anonymous marketplace access or nationwide listings
-- ❌ AI recommendations, automated price estimation, or image recognition
-- ❌ Complex bidding/auction mechanics, subscriptions, paid advertising
-- ❌ Direct integration with university student information systems (unless formally approved)
 
 ---
 

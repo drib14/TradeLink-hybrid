@@ -1,4 +1,4 @@
-import { ListingCondition, ListingStatus } from './enums.js';
+import { ListingCondition, ListingStatus } from './enums';
 
 export interface ListingImageSummary {
   id: string;

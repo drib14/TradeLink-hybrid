@@ -1,4 +1,4 @@
-import { UserRole, AccountStatus, VerificationStatus } from './enums.js';
+import { UserRole, AccountStatus, VerificationStatus } from './enums';
 
 export interface UserSummary {
   id: string;
