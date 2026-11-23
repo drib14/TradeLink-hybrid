@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { ListingSummary, ListingCondition } from '@TradeLink/contracts';
+import { ListingSummary, ListingCondition } from '@tradelink/contracts';
 
 interface ListingCardProps {
   listing: ListingSummary;

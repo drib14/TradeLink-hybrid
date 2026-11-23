@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { ConversationSummary } from '@TradeLink/contracts';
+import { ConversationSummary } from '@tradelink/contracts';
 
 const MOCK_CONVERSATIONS: ConversationSummary[] = [
   {

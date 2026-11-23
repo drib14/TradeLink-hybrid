@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-import { UserSummary } from '@TradeLink/contracts';
+import { UserSummary } from '@tradelink/contracts';
 
 interface AuthState {
   user: UserSummary | null;

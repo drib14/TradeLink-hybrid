@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Camera, Image as ImageIcon } from 'lucide-react-native';
 import { Button } from '../../components/ui/Button';
-import { ListingCondition } from '@TradeLink/contracts';
+import { ListingCondition } from '@tradelink/contracts';
 
 export default function SellScreen() {
   const [title, setTitle] = useState('');
